@@ -3,5 +3,5 @@
 
 from distutils.version import StrictVersion
 
-__version__ = StrictVersion('0.1.0')
+__version__ = StrictVersion('0.1.1')
 __description__ = 'Jump to a remote server, start up iperf3, and collect connection data'

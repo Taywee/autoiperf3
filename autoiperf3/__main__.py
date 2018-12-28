@@ -4,6 +4,7 @@
 import locale
 import argparse
 import json
+import re
 import subprocess
 from collections import namedtuple
 
@@ -12,6 +13,9 @@ import paramiko
 
 from . import __version__, __description__
 from .config import schema
+
+# Fix broken iperf3 behavior: https://github.com/esnet/iperf/issues/826
+NANREPLACE = re.compile(r'":\s*-?nan,$', re.IGNORECASE)
 
 class Datapoint:
     def __init__(self, dkey, metric=0, status=0, message=''):
@@ -86,23 +90,25 @@ def main():
         # Start up client side
         response = subprocess.check_output(command, timeout=30)
 
-        local = json.loads(str(response, 'utf-8'))
-        remote = json.load(stdout)
+        # Fix broken iperf3 behavior: https://github.com/esnet/iperf/issues/826
+        local = json.loads(NANREPLACE.sub('": null,', str(response, 'utf-8')))
+        remote = json.loads(NANREPLACE.sub('": null,', str(stdout.read(), 'utf-8')))
 
     prefix = str(config.dkeyprefix)
     # Output local datapoints
     for category, data in local['end'].items():
         if isinstance(data, dict):
             for key, value in data.items():
-                print(Datapoint(dkey='|'.join((prefix, 'local', category, key)), metric=value))
+                if value is not None:
+                    print(Datapoint(dkey='|'.join((prefix, 'local', category, key)), metric=value))
 
     # Output remote datapoints
     for category, data in remote['end'].items():
         if isinstance(data, dict):
             for key, value in data.items():
-                print(Datapoint(dkey='|'.join((prefix, 'remote', category, key)), metric=value))
+                if value is not None:
+                    print(Datapoint(dkey='|'.join((prefix, 'remote', category, key)), metric=value))
 
 if __name__ == '__main__':
     locale.setlocale(locale.LC_ALL, '')
     main()
-
