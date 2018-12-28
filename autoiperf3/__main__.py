@@ -15,7 +15,7 @@ from . import __version__, __description__
 from .config import schema
 
 # Fix broken iperf3 behavior: https://github.com/esnet/iperf/issues/826
-NANREPLACE = re.compile(r'":\s*-?nan,$', re.IGNORECASE)
+NANREPLACE = re.compile(r'":\s*-?nan,$', re.IGNORECASE | re.MULTILINE)
 
 class Datapoint:
     def __init__(self, dkey, metric=0, status=0, message=''):
